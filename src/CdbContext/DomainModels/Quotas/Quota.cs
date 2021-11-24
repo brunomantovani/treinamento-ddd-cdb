@@ -46,7 +46,7 @@ namespace CdbContext.DomainModels.Quotas
         {
             if (_incomeList.Any(x => x.Date.Date.Equals(incomeDate.Date)))
             {
-                throw new Exception("Não é possível adicionar umr rendimento, pois já existe um rendimento para esta data");
+                throw new Exception("Não é possível adicionar um rendimento, pois já existe um rendimento para esta data");
             }
 
             var quotaIncome = new QuotaIncome(
