@@ -22,7 +22,7 @@ namespace CdbContext.Tests.DomainModels.Quotas
             var investmentAccountId = new InvestmentAccountId(
                 investmentAccountIdValue);
 
-            var quota = new Quota(
+            var quota = Quota.FromPurchase(
                 quotaAmount,
                 investmentAccountId);
 

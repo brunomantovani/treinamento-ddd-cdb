@@ -15,8 +15,6 @@ namespace CdbContext.Tests.Application.Quotas.Commands.RedemptionQuotaCommand
     public sealed class RedemptionQuotaCommandTest
     {
         //TODO: criar etapas dos testes abaixo
-        //4. Gerar uma cota de venda com base na de compra
-        //  - Entidade
         //5. Garantir que a cota de compra foi atualizada/vendida
         //  - Chamar repositório para atualizar os dados cota e salvar a cota de venda
         //6. Movimentar da conta de investimentos para conta corrente
@@ -84,8 +82,8 @@ namespace CdbContext.Tests.Application.Quotas.Commands.RedemptionQuotaCommand
 
             var quotas = new[]
             {
-                new Quota(new QuotaAmount(10), _investmentAccountId),
-                new Quota(new QuotaAmount(20), _investmentAccountId)
+                Quota.FromPurchase(new QuotaAmount(10), _investmentAccountId),
+                Quota.FromPurchase(new QuotaAmount(20), _investmentAccountId)
             };
 
             _quotaRepositoryMock
@@ -110,6 +108,31 @@ namespace CdbContext.Tests.Application.Quotas.Commands.RedemptionQuotaCommand
             var exception = Assert
                 .ThrowsAsync<HasJudicialBlockToRedemptionException>(AsyncTestDelegate);
             Assert.AreEqual(expectedExceptionMessage, exception.Message);
+        }
+
+        [Test]
+        public void AssertNewQuotaSaleOnRedemption()
+        {
+            //arrange
+            var quotaAmountValue = 200;
+            var quotaAmount = new QuotaAmount(
+                quotaAmountValue);
+
+            var quota = Quota.FromPurchase(
+                quotaAmount,
+                _investmentAccountId);
+
+            var redeemValue = 100M;
+            var redeemNegativeValue = redeemValue * -1M;
+
+            //act
+            var newQuotaSale = quota
+                .Redeem(redeemValue);
+
+            //assert
+            Assert.IsNotNull(newQuotaSale);
+            Assert.IsTrue(newQuotaSale.Amount.Equals(redeemNegativeValue));
+            Assert.AreEqual(redeemNegativeValue, newQuotaSale.Amount.Value);
         }
     }
 }

@@ -1,5 +1,4 @@
 ﻿using Commons.DomainModels;
-using System;
 using System.Collections.Generic;
 
 namespace CdbContext.DomainModels.Quotas
@@ -9,11 +8,6 @@ namespace CdbContext.DomainModels.Quotas
     {
         public QuotaAmount(decimal value)
         {
-            if (value <= 0)
-            {
-                throw new InvalidOperationException("o amount não pode menor ou igual a zero");
-            }
-
             Value = value;
         }
 
@@ -32,6 +26,21 @@ namespace CdbContext.DomainModels.Quotas
         public override string ToString()
         {
             return $"{Value}";
+        }
+
+        public override bool Equals(object obj)
+        {
+            if(obj.GetType() == typeof(decimal))
+            {
+                return (decimal)obj == Value;
+            }
+
+            return base.Equals(obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
         }
     }
 }

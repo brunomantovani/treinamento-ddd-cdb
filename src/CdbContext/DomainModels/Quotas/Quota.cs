@@ -11,33 +11,36 @@ namespace CdbContext.DomainModels.Quotas
     {
         private readonly List<QuotaIncome> _incomeList;
 
-        public Quota(
-            QuotaAmount quotaAmount,
-            InvestmentAccountId investmentAccountId)
+        private Quota()
             : base(QuotaId.NewIdentity())
         {
-            Amount = quotaAmount;
-            InvestmentAccountId = investmentAccountId;
-
             _incomeList = new List<QuotaIncome>();
         }
 
+        public static Quota FromPurchase(
+            QuotaAmount quotaAmount,
+            InvestmentAccountId investmentAccountId)
+        {
+            if (quotaAmount <= 0)
+            {
+                throw new InvalidOperationException("o quota amount não pode menor ou igual a zero");
+            }
+
+            return new Quota
+            {
+                Amount = quotaAmount,
+                InvestmentAccountId = investmentAccountId
+            };
+        }
+
         public QuotaAmount Amount { get; private set; }
-        public InvestmentAccountId InvestmentAccountId { get; }
-        public IReadOnlyList<QuotaIncome> IncomeList //=> _incomeList.AsReadOnly();
+        public InvestmentAccountId InvestmentAccountId { get; private set; }
+        public IReadOnlyList<QuotaIncome> IncomeList
         {
             get
             {
                 return _incomeList.AsReadOnly();
             }
-        }
-
-        public Quota Sell(decimal value)
-        {
-            var newValue = Amount - value;
-            Amount = new QuotaAmount(newValue);
-
-            return new Quota(Amount, InvestmentAccountId);
         }
 
         public QuotaIncome AddIncome(
@@ -65,19 +68,6 @@ namespace CdbContext.DomainModels.Quotas
             //    quotaIncome, GetPosition());
         }
 
-        //public QuotaPosition Position
-        //{
-        //    get
-        //    {
-        //        var amount = Amount + _incomeList
-        //            .Sum(x => x.Amount);
-
-        //        return new QuotaPosition(
-        //            amount,
-        //            DateTime.Now);
-        //    }
-        //}
-
         public QuotaPosition GetPosition()
         {
             var amount = Amount + _incomeList
@@ -88,19 +78,18 @@ namespace CdbContext.DomainModels.Quotas
                 DateTime.Now);
         }
 
-        //public override bool Equals(object obj)
-        //{
-        //    if(obj == null || obj.GetType() != GetType())
-        //    {
-        //        return false;
-        //    }
+        public Quota Redeem(decimal redeemValue)
+        {
+            var redemQuotaAmount = new QuotaAmount(redeemValue * -1);
 
-        //    var quota = (Quota)obj;
+            var newValue = Amount + redemQuotaAmount;
+            Amount = new QuotaAmount(newValue);
 
-        //    if(quota.Id == this.Id)
-        //    {
-        //        return true;
-        //    }
-        //}
+            return new Quota
+            {
+                Amount = redemQuotaAmount,
+                InvestmentAccountId = InvestmentAccountId
+            };
+        }
     }
 }

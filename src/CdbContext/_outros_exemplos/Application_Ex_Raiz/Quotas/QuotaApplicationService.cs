@@ -41,7 +41,7 @@ namespace CdbContext.Application_Ex_Raiz.Quotas
                 var quotaAmount = new QuotaAmount(
                     command.Amount);
 
-                var quota = new Quota(
+                var quota = Quota.FromPurchase(
                     quotaAmount,
                     investmentAccountId);
 
