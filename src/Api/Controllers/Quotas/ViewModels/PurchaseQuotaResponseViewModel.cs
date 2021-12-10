@@ -1,4 +1,6 @@
-﻿namespace Api.Controllers.Quotas.ViewModels
+﻿using System;
+
+namespace Api.Controllers.Quotas.ViewModels
 {
     public sealed class PurchaseQuotaResponseViewModel
     {

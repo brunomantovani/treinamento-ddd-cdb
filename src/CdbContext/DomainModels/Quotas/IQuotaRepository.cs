@@ -10,5 +10,6 @@ namespace CdbContext.DomainModels.Quotas
         Task AddAsync(Quota quota, CancellationToken cancellationToken = default);
         Task<Quota> GetQuotaByIdAsync(QuotaId quotaId, CancellationToken cancellationToken = default);
         Task<IEnumerable<Quota>> GetAllQuotasAsync(InvestmentAccountId investmentAccountId, CancellationToken cancellationToken);
+        Task UpdateRangeQuotasAsync(IEnumerable<Quota> quotas, CancellationToken cancellationToken);
     }
 }

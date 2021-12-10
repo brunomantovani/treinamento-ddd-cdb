@@ -1,9 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Commons.DomainModels
 {
     public abstract class Identity
-        : IEquatable<Identity>
+        : ValueObject
         , IIdentity
     {
         protected Identity()
@@ -41,9 +42,9 @@ namespace Commons.DomainModels
             return $"{Value}";
         }
 
-        public static implicit operator Guid(Identity identity)
+        protected override IEnumerable<object> GetAtomicValues()
         {
-            return identity.Value;
+            yield return Value;
         }
     }
 }

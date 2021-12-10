@@ -2,11 +2,13 @@
 using CdbContext.Application.Quotas.Exceptions;
 using CdbContext.DomainModels.InvestmentAccounts;
 using CdbContext.DomainModels.Quotas;
+using CdbContext.DomainServices.SaleQuotasFromRedeemAmount;
 using CdbContext.Infrastructure.Acls.JudicialBlock;
 using CdbContext.Infrastructure.Acls.JudicialBlock.Responses;
 using Moq;
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,9 +16,7 @@ namespace CdbContext.Tests.Application.Quotas.Commands.RedemptionQuotaCommand
 {
     public sealed class RedemptionQuotaCommandTest
     {
-        //TODO: criar etapas dos testes abaixo
-        //5. Garantir que a cota de compra foi atualizada/vendida
-        //  - Chamar repositório para atualizar os dados cota e salvar a cota de venda
+        //TODO: criar etapas dos testes abaixo        
         //6. Movimentar da conta de investimentos para conta corrente
         //  - Utilizar uma ACL para realizar a movimentação
         //7. Se já foi consolidada e enviada para o parceiro, precisamos realizar o resgate no parceiro
@@ -24,12 +24,14 @@ namespace CdbContext.Tests.Application.Quotas.Commands.RedemptionQuotaCommand
 
         private CancellationToken _cancellationToken;
         private Guid _investmentAccountIdValue;
+        private decimal _redeemAmountValue;
         private InvestmentAccountId _investmentAccountId;
         private RedemptionQuotaCommandRequest _request;
         private RedemptionQuotaCommandHandler _handler;
 
         private Mock<IQuotaRepository> _quotaRepositoryMock;
         private Mock<IJudicialBlockAcl> _judicialBlockAclMock;
+        private Mock<ISaleQuotasFromRedeemAmountDomainService> _saleQuotasFromRedeemAmountDomainService;
 
         [SetUp]
         public void SetUp()
@@ -42,13 +44,18 @@ namespace CdbContext.Tests.Application.Quotas.Commands.RedemptionQuotaCommand
 
             _quotaRepositoryMock = new Mock<IQuotaRepository>();
             _judicialBlockAclMock = new Mock<IJudicialBlockAcl>();
+            _saleQuotasFromRedeemAmountDomainService = new Mock<ISaleQuotasFromRedeemAmountDomainService>();
+
+            _redeemAmountValue = 5;
 
             _request = new RedemptionQuotaCommandRequest(
-                _investmentAccountIdValue);
+                _investmentAccountIdValue,
+                _redeemAmountValue);
 
             _handler = new RedemptionQuotaCommandHandler(
                 _quotaRepositoryMock.Object,
-                _judicialBlockAclMock.Object);
+                _judicialBlockAclMock.Object,
+                _saleQuotasFromRedeemAmountDomainService.Object);
         }
 
         [Test]
@@ -108,6 +115,10 @@ namespace CdbContext.Tests.Application.Quotas.Commands.RedemptionQuotaCommand
             var exception = Assert
                 .ThrowsAsync<HasJudicialBlockToRedemptionException>(AsyncTestDelegate);
             Assert.AreEqual(expectedExceptionMessage, exception.Message);
+
+            _judicialBlockAclMock.Verify(
+                x => x.GetBlockedValuesAsync(_investmentAccountId, _cancellationToken),
+                Times.Exactly(1));
         }
 
         [Test]
@@ -133,6 +144,40 @@ namespace CdbContext.Tests.Application.Quotas.Commands.RedemptionQuotaCommand
             Assert.IsNotNull(newQuotaSale);
             Assert.IsTrue(newQuotaSale.Amount.Equals(redeemNegativeValue));
             Assert.AreEqual(redeemNegativeValue, newQuotaSale.Amount.Value);
+        }
+
+        [Test]
+        public async Task AssertUpdatedSaleQuotas()
+        {
+            //arrange
+            var quotas = new[]
+{
+                Quota.FromPurchase(new QuotaAmount(10), _investmentAccountId),
+                Quota.FromPurchase(new QuotaAmount(20), _investmentAccountId)
+            };
+
+            _quotaRepositoryMock
+                .Setup(x => x.GetAllQuotasAsync(_investmentAccountId, _cancellationToken))
+                .ReturnsAsync(quotas);
+
+            var getBlockedValuesResponse = new GetBlockedValuesResponse
+            {
+                Value = 0
+            };
+
+            _judicialBlockAclMock
+                .Setup(x => x.GetBlockedValuesAsync(_investmentAccountId, _cancellationToken))
+                .ReturnsAsync(getBlockedValuesResponse);
+
+            //act
+            await _handler.Handle(
+                _request,
+                _cancellationToken);
+
+            //assert
+            _quotaRepositoryMock.Verify(
+                x => x.UpdateRangeQuotasAsync(It.IsAny<IEnumerable<Quota>>(), _cancellationToken),
+                Times.Exactly(1));
         }
     }
 }
